@@ -1,6 +1,7 @@
 import userModel from "../models/user.model.js";
 import bcrypt from "bcrypt"
 import generateToken from "../config/jwtToken.js";
+import { verifyEmail } from "../verifyEmail/verifyEmail.js";
 
 export const registerUser = async(req,res)  => {
    try {
@@ -14,6 +15,7 @@ export const registerUser = async(req,res)  => {
     })
     const newCreatedUser = await userModel.findById(user._id).select("-password");
     const token = generateToken(user)
+    verifyEmail(token,email)
     res.cookie("token",token);
     res.status(201).send({message:"user created successfully!",success:true,data:newCreatedUser})
    } catch (error) {
@@ -38,5 +40,11 @@ export const loginUser = async(req,res)  => {
     res.status(500).send({message:"Server error:",error}) 
   }
 }
-
-export const logoutUser = async(req,res)  => {}
+export const logoutUser = async(req,res)  => {
+ try {
+   res.clearCookie("token")
+   res.status(200).send({message:"User Logout Successfully!!",success:true})
+ } catch (error) {
+  res.status(500).send({message:"Server Error:",error})
+ }
+}
