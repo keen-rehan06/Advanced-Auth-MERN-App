@@ -2,6 +2,7 @@ import userModel from "../models/user.model.js";
 import bcrypt from "bcrypt"
 import generateToken from "../config/jwtToken.js";
 import { verifyEmail } from "../verifyEmail/verifyEmail.js";
+import jwt from "jsonwebtoken"
 
 export const registerUser = async(req,res)  => {
    try {
@@ -26,6 +27,61 @@ export const registerUser = async(req,res)  => {
    }    
 }
  
+export const verification = async (req,res) => {
+ 
+ try {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({
+      message: "Authorization token is missing or invalid",
+      success: false,
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
+  let decoded;
+
+try {
+  decoded = jwt.verify(token, process.env.JWT_SECRET);
+  console.log("Decoded:", decoded);
+} catch (error) {
+  console.log("JWT ERROR NAME:", error.name);
+  console.log("JWT ERROR MESSAGE:", error.message);
+  return res.status(400).json({
+    message: error.message,
+    success: false,
+  });
+}
+
+
+  const user = await userModel.findById(decoded.id);
+  if (!user) {
+    return res.status(404).json({
+      message: "User not found",
+      success: false,
+    });
+  }
+
+  user.token = null;
+  user.isVerified = true;
+  await user.save();
+
+  return res.status(200).json({
+    message: "Email verified successfully!",
+    success: true,
+  });
+
+} catch (error) {
+  return res.status(500).json({
+    success: false,
+    message: "Something went wrong!",
+    error: error.message,
+  });
+}
+
+  }
+
 export const loginUser = async(req,res)  => {
   try {
     const {email,password} = req.body;

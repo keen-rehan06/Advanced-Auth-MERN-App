@@ -86,35 +86,3 @@ export const isLoggedIn = async (req, res, next) => {
 
 };
 
-export const isVerificationMiddleware = async (req,res,next) => {
-  try {
-  const authHeader = req.header.authorization;
-  if(!authHeader || !authHeader.startsWith("Bearer ")){
-    return res.status(401).json({
-      message:"Authorization token is missing or invalid",
-      success:false,
-    })
-  }
-    const token = authHeader.split(" ")[1]; 
-    let decoded;
-    try {
-      decoded = jwt.verify(token,process.env.JWT_SECRET)
-    } catch (error) {
-      if (error.name === "TokenExpiredError") {
-        return res.status(400).send({
-          message:"The registration token has expired",
-          success:false
-        })
-      } 
-      return res.status(400).send({message:"Token verification failed!",success:false
-      })
-    }
-    next()
-  } catch (error) {
-     return res.status(401).send({
-    success: false,
-    message: "something Went wrong!",
-    data:error
-  });
-  }
-}
