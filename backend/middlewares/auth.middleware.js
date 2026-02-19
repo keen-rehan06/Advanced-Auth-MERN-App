@@ -38,33 +38,83 @@ export const loginUserMiddleware = async (req, res, next) => {
 };
 
 export const isLoggedIn = async (req, res, next) => {
-  try {
-    const token = req.cookies.token;
-    if (!token) {
-      return res.status(401).send({
-        success: false,
-        message: "Unauthorized! Please login first."
-      });
+ try {
+  let token;
+
+  // 1️⃣ Check token in cookies
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
+
+  // 2️⃣ Check token in Authorization header if not found in cookies
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+
+    // Check if it starts with Bearer
+    if (authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
     }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded) {
-      return res.status(401).send({
-        message: "Expired token.",
-        success: false,
-      });
-    }
-    req.user = decoded;
-    next();
-  } catch (error) {
-     console.log("===== JWT ERROR =====");
-  console.log("NAME:", error.name);
-  console.log("MESSAGE:", error.message);
-  console.log("TOKEN:", req.cookies?.token);
-  console.log("SECRET:", process.env.JWT_SECRET);
-  console.log("=====================");
+  }
+
+  // 3️⃣ If still no token
+  if (!token) {
     return res.status(401).send({
-      message: "Invalid or expired token.",
       success: false,
+      message: "Unauthorized! Please login first."
     });
   }
+
+  // 4️⃣ Verify token
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+  if (!decoded) {
+    return res.status(401).send({
+      success: false,
+      message: "Expired token."
+    });
+  }
+
+  req.user = decoded;
+  next();
+
+} catch (error) {
+  return res.status(401).send({
+    success: false,
+    message: "Invalid or expired token."
+  });
+}
+
 };
+
+export const isVerificationMiddleware = async (req,res,next) => {
+  try {
+  const authHeader = req.header.authorization;
+  if(!authHeader || !authHeader.startsWith("Bearer ")){
+    return res.status(401).json({
+      message:"Authorization token is missing or invalid",
+      success:false,
+    })
+  }
+    const token = authHeader.split(" ")[1]; 
+    let decoded;
+    try {
+      decoded = jwt.verify(token,process.env.JWT_SECRET)
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res.status(400).send({
+          message:"The registration token has expired",
+          success:false
+        })
+      } 
+      return res.status(400).send({message:"Token verification failed!",success:false
+      })
+    }
+    next()
+  } catch (error) {
+     return res.status(401).send({
+    success: false,
+    message: "something Went wrong!",
+    data:error
+  });
+  }
+}

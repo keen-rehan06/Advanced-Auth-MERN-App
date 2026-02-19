@@ -13,10 +13,13 @@ export const registerUser = async(req,res)  => {
       email,
       password:hash
     })
-    const newCreatedUser = await userModel.findById(user._id).select("-password");
     const token = generateToken(user)
     verifyEmail(token,email)
+    user.token = token
+    await user.save()
+    const newCreatedUser = await userModel.findById(user._id).select("-password -token");
     res.cookie("token",token);
+    console.log(user);
     res.status(201).send({message:"user created successfully!",success:true,data:newCreatedUser})
    } catch (error) {
     res.status(500).send({message:"Server error:",error})
