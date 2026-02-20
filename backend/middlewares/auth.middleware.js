@@ -31,6 +31,7 @@ export const loginUserMiddleware = async (req, res, next) => {
         .send({ message: "User does not exist!", success: false });
     if (!email || !password)
       return res.status(400).send({ message: "All fields are required!!" });
+    if(user.isVerified !== true) return res.status(402).send({message:"Verify your account than login",success:false});
     next();
   } catch (error) {
     res.status(500).send({message:"Server error", success:false})

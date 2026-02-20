@@ -1,4 +1,5 @@
 import userModel from "../models/user.model.js";
+import sessionModel from "../models/session.model.js";    
 import bcrypt from "bcrypt"
 import generateToken from "../config/jwtToken.js";
 import { verifyEmail } from "../verifyEmail/verifyEmail.js";
@@ -26,7 +27,6 @@ export const registerUser = async(req,res)  => {
     res.status(500).send({message:"Server error:",error})
    }    
 }
- 
 export const verification = async (req,res) => {
  
  try {
@@ -80,8 +80,7 @@ try {
   });
 }
 
-  }
-
+}
 export const loginUser = async(req,res)  => {
   try {
     const {email,password} = req.body;
