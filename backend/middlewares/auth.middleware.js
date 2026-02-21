@@ -39,51 +39,30 @@ export const loginUserMiddleware = async (req, res, next) => {
 };
 
 export const isLoggedIn = async (req, res, next) => {
- try {
   let token;
 
-  // 1️⃣ Check token in cookies
-  if (req.cookies && req.cookies.token) {
+  // 1️⃣ Check cookie
+  if (req.cookies.token) {
     token = req.cookies.token;
   }
 
-  // 2️⃣ Check token in Authorization header if not found in cookies
-  if (!token && req.headers.authorization) {
-    const authHeader = req.headers.authorization;
-
-    // Check if it starts with Bearer
-    if (authHeader.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
-    }
+  // 2️⃣ Check Authorization header
+  else if (req.headers.authorization &&
+           req.headers.authorization.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
   }
 
-  // 3️⃣ If still no token
   if (!token) {
-    return res.status(401).send({
-      success: false,
-      message: "Unauthorized! Please login first."
-    });
+    return res.status(401).json({ message: "Login first" });
   }
 
-  // 4️⃣ Verify token
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-  if (!decoded) {
-    return res.status(401).send({
-      success: false,
-      message: "Expired token."
-    });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid token" });
   }
-
-  req.user = decoded;
-  next();
-
-} catch (error) {
-  return res.status(401).send({
-    success: false,
-    message: "Invalid or expired token."
-  });
-}
-
 };
+
 
